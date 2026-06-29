@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>Pokémon Recordatorios</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --card: #16213e;
+      --border: #2a2a4a;
+      --accent: #e8b84b;
+      --accent2: #6c63ff;
+      --text: #e8e8f0;
+      --muted: #7a7a9a;
+      --success: #4ade80;
+      --danger: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      line-height: 1.8;
+      letter-spacing: 1px;
+    }
+
+    .logo span {
+      color: var(--accent2);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .status-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.warn { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .status-dot.error { background: var(--danger); }
+
+    #status-text { color: var(--muted); flex: 1; }
+
+    #enable-btn {
+      background: var(--accent2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      transition: opacity 0.2s;
+    }
+    #enable-btn:hover { opacity: 0.85; }
+
+    h2 {
+      font-size: 11px;
+      font-family: 'Press Start 2P', monospace;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .reminders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .reminder-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .reminder-card.active { border-color: var(--accent2); }
+    .reminder-card.inactive { opacity: 0.5; }
+
+    .reminder-emoji {
+      font-size: 28px;
+      flex-shrink: 0;
+      width: 40px;
+      text-align: center;
+    }
+
+    .reminder-info { flex: 1; }
+
+    .reminder-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .reminder-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .reminder-time span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .toggle input:checked + .toggle-track { background: var(--accent2); }
+    .toggle input:checked + .toggle-track::after { transform: translateX(20px); }
+
+    /* Add reminder form */
+    .add-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .add-section h2 { margin-bottom: 16px; }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .form-row label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .form-row input, .form-row select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .form-row input:focus, .form-row select:focus {
+      border-color: var(--accent2);
+    }
+
+    .form-row select option { background: var(--card); }
+
+    .add-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #0f0f1a;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .add-btn:hover { opacity: 0.85; }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .delete-btn:hover { color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 24px 0;
+    }
+
+    .pwa-tip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .pwa-tip strong { color: var(--text); }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--accent2);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      z-index: 100;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ POKÉMON <span>RECORDATORIOS</span></div>
+  <p class="subtitle">Notificaciones para no perderte nada</p>
+</header>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Verificando permisos...</span>
+  <button id="enable-btn">Activar notificaciones</button>
+</div>
+
+<h2>MIS RECORDATORIOS</h2>
+<div class="reminders-list" id="reminders-list"></div>
+
+<div class="add-section">
+  <h2>NUEVO RECORDATORIO</h2>
+  <div class="form-row">
+    <label>Nombre</label>
+    <input type="text" id="input-name" placeholder="ej. Alimentar a Snorlax" maxlength="50" />
+  </div>
+  <div class="form-row">
+    <label>Emoji</label>
+    <input type="text" id="input-emoji" placeholder="🍖" maxlength="2" />
+  </div>
+  <div class="form-row">
+    <label>Hora</label>
+    <input type="time" id="input-time" value="17:00" />
+  </div>
+  <div class="form-row">
+    <label>Repetir</label>
+    <select id="input-repeat">
+      <option value="daily">Todos los días</option>
+      <option value="once">Una sola vez (hoy)</option>
+    </select>
+  </div>
+  <button class="add-btn" onclick="addReminder()">＋ Agregar recordatorio</button>
+</div>
+
+<div class="pwa-tip">
+  <strong>💡 Tip:</strong> Para recibir notificaciones aunque tengas el navegador cerrado, instala esta página como app: en tu celular toca <strong>"Agregar a pantalla de inicio"</strong> desde el menú del navegador.
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ─── Estado ────────────────────────────────────────────────────────────────
+  let reminders = JSON.parse(localStorage.getItem('pk_reminders') || '[]');
+  let notifPermission = Notification.permission;
+  let checkIntervals = {};
+
+  // Recordatorios por defecto (solo si es la primera visita)
+  if (reminders.length === 0) {
+    reminders = [
+      { id: 'snorlax', name: 'Alimentar a Snorlax', emoji: '🍖', time: '17:00', repeat: 'daily', active: true }
+    ];
+    save();
+  }
+
+  // ─── Permisos ───────────────────────────────────────────────────────────────
+  function updateStatusBar() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    const btn = document.getElementById('enable-btn');
+
+    if (!('Notification' in window)) {
+      dot.className = 'status-dot error';
+      text.textContent = 'Tu navegador no soporta notificaciones.';
+      return;
+    }
+
+    if (notifPermission === 'granted') {
+      dot.className = 'status-dot active';
+      text.textContent = 'Notificaciones activas ✓';
+      btn.style.display = 'none';
+    } else if (notifPermission === 'denied') {
+      dot.className = 'status-dot error';
+      text.textContent = 'Notificaciones bloqueadas. Actívalas en ajustes del navegador.';
+      btn.style.display = 'none';
+    } else {
+      dot.className = 'status-dot warn';
+      text.textContent = 'Notificaciones no activadas aún.';
+      btn.style.display = 'inline-block';
+    }
+  }
+
+  document.getElementById('enable-btn').addEventListener('click', async () => {
+    const result = await Notification.requestPermission();
+    notifPermission = result;
+    updateStatusBar();
+    if (result === 'granted') {
+      showToast('✅ ¡Notificaciones activadas!');
+      startAllSchedulers();
+    }
+  });
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
+  function render() {
+    const list = document.getElementById('reminders-list');
+
+    if (reminders.length === 0) {
+      list.innerHTML = '<p class="empty-state">No hay recordatorios aún. ¡Agrega uno abajo!</p>';
+      return;
+    }
+
+    list.innerHTML = reminders.map(r => `
+      <div class="reminder-card ${r.active ? 'active' : 'inactive'}" id="card-${r.id}">
+        <div class="reminder-emoji">${r.emoji}</div>
+        <div class="reminder-info">
+          <div class="reminder-name">${r.name}</div>
+          <div class="reminder-time">
+            <span>${r.time}</span> · ${r.repeat === 'daily' ? 'Todos los días' : 'Hoy una vez'}
+          </div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${r.active ? 'checked' : ''} onchange="toggleReminder('${r.id}', this.checked)" />
+          <div class="toggle-track"></div>
+        </label>
+        <button class="delete-btn" onclick="deleteReminder('${r.id}')" title="Eliminar">✕</button>
+      </div>
+    `).join('');
+  }
+
+  // ─── CRUD ───────────────────────────────────────────────────────────────────
+  function addReminder() {
+    const name = document.getElementById('input-name').value.trim();
+    const emoji = document.getElementById('input-emoji').value.trim() || '🔔';
+    const time = document.getElementById('input-time').value;
+    const repeat = document.getElementById('input-repeat').value;
+
+    if (!name) { showToast('⚠️ Escribe un nombre primero'); return; }
+    if (!time) { showToast('⚠️ Selecciona una hora'); return; }
+
+    const r = { id: Date.now().toString(), name, emoji, time, repeat, active: true };
+    reminders.push(r);
+    save();
+    render();
+    scheduleReminder(r);
+    showToast(`✅ "${name}" agregado`);
+
+    document.getElementById('input-name').value = '';
+    document.getElementById('input-emoji').value = '';
+  }
+
+  function deleteReminder(id) {
+    clearInterval(checkIntervals[id]);
+    reminders = reminders.filter(r => r.id !== id);
+    save();
+    render();
+    showToast('Recordatorio eliminado');
+  }
+
+  function toggleReminder(id, active) {
+    const r = reminders.find(r => r.id === id);
+    if (!r) return;
+    r.active = active;
+    save();
+    render();
+    if (active) scheduleReminder(r);
+    else clearInterval(checkIntervals[id]);
+  }
+
+  function save() {
+    localStorage.setItem('pk_reminders', JSON.stringify(reminders));
+  }
+
+  // ─── Scheduling ─────────────────────────────────────────────────────────────
+  function scheduleReminder(r) {
+    if (!r.active) return;
+    clearInterval(checkIntervals[r.id]);
+
+    checkIntervals[r.id] = setInterval(() => {
+      if (!r.active || notifPermission !== 'granted') return;
+
+      const now = new Date();
+      const [h, m] = r.time.split(':').map(Number);
+      if (now.getHours() === h && now.getMinutes() === m && now.getSeconds() < 30) {
+        fireNotification(r);
+        if (r.repeat === 'once') {
+          deleteReminder(r.id);
+        }
+      }
+    }, 20000); // chequea cada 20 segundos
+  }
+
+  function fireNotification(r) {
+    new Notification(`${r.emoji} ${r.name}`, {
+      body: `Son las ${r.time} — ¡hora de tu recordatorio!`,
+      icon: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png',
+      badge: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png',
+      tag: r.id,
+      renotify: true
+    });
+  }
+
+  function startAllSchedulers() {
+    reminders.forEach(r => scheduleReminder(r));
+  }
+
+  // ─── Toast ──────────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ─── Service Worker ─────────────────────────────────────────────────────────
+  async function registerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      syncWithSW();
+    } catch (e) {
+      console.warn('SW error:', e);
+    }
+  }
+
+  function syncWithSW() {
+    if (!navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SCHEDULE',
+      reminders: reminders
+    });
+  }
+
+  // Re-sincronizar con SW cada vez que se guarda
+  const _save = save;
+  save = function() {
+    _save();
+    // pequeño delay para que el SW esté listo
+    setTimeout(syncWithSW, 300);
+  };
+
+  // ─── Init ───────────────────────────────────────────────────────────────────
+  updateStatusBar();
+  render();
+  registerSW();
+  if (notifPermission === 'granted') startAllSchedulers();
+</script>
+</body>
+</html>
