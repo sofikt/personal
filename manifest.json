@@ -2,13 +2,13 @@
   "name": "Pokémon Recordatorios",
   "short_name": "PkRecords",
   "description": "Recordatorios Pokémon con notificaciones",
-  "start_url": "/",
+  "start_url": "/personal",
   "display": "standalone",
   "background_color": "#0f0f1a",
   "theme_color": "#1a1a2e",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png",
+      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
       "sizes": "512x512",
       "type": "image/png"
     }
